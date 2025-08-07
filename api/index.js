@@ -1,7 +1,9 @@
 const express = require('express');
 const cors =  require('cors');
 const jwt = require('jsonwebtoken');
+const cookieParser = require('cookie-parser');
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
+const serverless = require('serverless-http');
 require('dotenv').config() // very much important
 const app = express();
 const port = process.env.PORT || 3000;
@@ -9,14 +11,46 @@ const port = process.env.PORT || 3000;
 //middleware
 // app.use(cors());
 app.use(cors({
-  origin: [
-    'https://your-frontend.vercel.app',  // Replace with your actual frontend URL
-    'http://localhost:5173'              // (Optional) local dev URL
-  ],
-  methods: ['GET', 'POST', 'PATCH', 'DELETE'],
-  credentials: true
+    origin: 'http://localhost:5173', // Where your React app is running
+    credentials: true               // Allow cookies to be shared
 }));
 app.use(express.json());
+app.use(cookieParser());
+
+const logger = (req,res,next)=>{
+  console.log("Inside the logger");
+  next();
+  
+}
+//Validation of Token
+const verifyToken = (req,res,next)=>{
+
+  console.log("Inside Verify Token Middleware",req.cookies);
+
+  const token = req.cookies?.token;
+
+// if there is no token
+  if(!token)
+  {
+    console.log('No Token');
+    
+    return res.status(401).send({message:"Unauthorized Access"});
+  }
+
+  jwt.verify(token,process.env.JWT_SECRET,(err,decoded)=>{
+   //  There is token but not the correct one or expired token
+    if(err){
+      console.log("Error : ",err);
+      
+      return res.status(401).send({message:"Unauthorized Access"});
+    }
+     req.user = decoded;
+     next();
+
+  })
+ 
+  
+}
 
 
 
@@ -44,14 +78,30 @@ async function run() {
     // Auth Related APIs
     app.post('/jwt',async(req,res)=>{
       const user = req.body;
-      const token = jwt.sign(user,'secret',{expiresIn:'1h'});
-      res.send(token);
+      const token = jwt.sign(user,process.env.JWT_SECRET,{expiresIn:'1h'});
+      res.cookie('token',token,{
+        httpOnly:true,
+        secure:false, //Set true in production for HTTPS.In localhost-->http(false) & in production -->https(true)
+        // sameSite:strict,
+      })
+      .send({success:true});
 
     });
-
-    app.get('/jobs',async(req,res)=>{
+// I won't add verifytoken to this API cause if I do it my project will not run as validation of token will run earlier before generating token.
+// SO I will get Unauthorized message.Wherever I need authentication I will add this verifyToken
+    app.get('/jobs',logger,async(req,res)=>{
+      console.log('Now inside the jobs API');
+      
       const email = req.query.email;
       let query = {};
+     
+      
+      //  console.log("Cookies Cookies Cookies",req.cookies);
+      // if(req.user.email !== req.query.email)
+      // {
+      //    return res.status(403).send({message:"Access Forbidden"});
+      // }
+
       if(email)
       {
         query = {hr_email : email}
@@ -185,7 +235,10 @@ app.get('/',(req,res)=>{
     res.send('Server is working');
 })
 
-app.listen(port,()=>{
-    console.log('Server is working on Port : ',port);
+// app.listen(port,()=>{
+//     console.log('Server is working on Port : ',port);
     
-})
+// })
+
+module.exports = app;
+module.exports.handler = serverless(app);

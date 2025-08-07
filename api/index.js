@@ -11,6 +11,7 @@ const port = process.env.PORT || 3000;
 //middleware
 // app.use(cors());
 app.use(cors({
+  //origin: ['http://localhost:5173',"2nd Url","3rd Url","....","..."]
     origin: 'http://localhost:5173', // Where your React app is running
     credentials: true               // Allow cookies to be shared
 }));
@@ -82,11 +83,31 @@ async function run() {
       res.cookie('token',token,{
         httpOnly:true,
         secure:false, //Set true in production for HTTPS.In localhost-->http(false) & in production -->https(true)
-        // sameSite:strict,
+        sameSite:'strict',
       })
       .send({success:true});
 
     });
+
+    app.post('/logout',(req,res)=>{
+      
+     res.clearCookie('token',{
+      httpOnly:true,
+      secure:false
+     })
+     .send({success:true});
+
+    });
+
+
+
+
+
+
+
+
+
+
 // I won't add verifytoken to this API cause if I do it my project will not run as validation of token will run earlier before generating token.
 // SO I will get Unauthorized message.Wherever I need authentication I will add this verifyToken
     app.get('/jobs',logger,async(req,res)=>{
@@ -233,7 +254,11 @@ run().catch(console.dir);
 
 app.get('/',(req,res)=>{
     res.send('Server is working');
-})
+});
+
+// app.get('*', (req, res) => {
+//   res.status(404).send('Route not found: ' + req.originalUrl);
+// });
 
 // app.listen(port,()=>{
 //     console.log('Server is working on Port : ',port);

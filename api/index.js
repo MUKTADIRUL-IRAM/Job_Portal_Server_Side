@@ -70,7 +70,7 @@ async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
 
-    await client.connect();
+    // await client.connect();
     
     //job related API's
     const database = client.db("job_portal");
@@ -268,10 +268,10 @@ app.get('/',(req,res)=>{
 //   res.status(404).send('Route not found: ' + req.originalUrl);
 // });
 
-app.listen(port,()=>{
-    console.log('Server is working on Port : ',port);
+// app.listen(port,()=>{
+//     console.log('Server is working on Port : ',port);
     
-})
+// })
 
-// module.exports = app;
-// module.exports.handler = serverless(app);
+module.exports = app;
+module.exports.handler = serverless(app);

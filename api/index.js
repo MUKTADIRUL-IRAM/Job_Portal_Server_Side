@@ -69,7 +69,8 @@ const client = new MongoClient(uri, {
 async function run() {
   try {
     // Connect the client to the server	(optional starting in v4.7)
-    // await client.connect();
+
+    await client.connect();
     
     //job related API's
     const database = client.db("job_portal");
@@ -140,6 +141,13 @@ async function run() {
       res.send(result);
 
     });
+
+    app.delete('/job-applications/:id',async(req,res)=>{
+      const id = req.params.id;
+      const query = {_id : new ObjectId(id)};
+      const remainingJobs = await jobApplicationCollection.deleteOne(query);
+      res.send(remainingJobs);
+    })
 
     app.get('/job-applications',async(req,res)=>{
       const email = req.query.email;
@@ -260,10 +268,10 @@ app.get('/',(req,res)=>{
 //   res.status(404).send('Route not found: ' + req.originalUrl);
 // });
 
-// app.listen(port,()=>{
-//     console.log('Server is working on Port : ',port);
+app.listen(port,()=>{
+    console.log('Server is working on Port : ',port);
     
-// })
+})
 
-module.exports = app;
-module.exports.handler = serverless(app);
+// module.exports = app;
+// module.exports.handler = serverless(app);
